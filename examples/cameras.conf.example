@@ -1,0 +1,27 @@
+# Photo Import — example camera profiles
+# ─────────────────────────────────────────────────────────────────────────────
+# You normally never edit this by hand: run `photo-import` and the first-run
+# wizard builds ~/.config/photo-import/cameras.conf for you, and
+# `photo-import --config-update` edits it later. This file just shows the
+# format if you'd rather write it yourself.
+#
+# One profile per line, fields separated by "|":
+#
+#   Name | raw_exts | jpeg_exts | split_folders | output_base_dir
+#
+#   raw_exts / jpeg_exts   comma-separated extensions, matched case-insensitively.
+#                          Either (or both) may be blank:
+#                            both set    -> files route by extension
+#                            one blank   -> single-file-type source (a TIFF scanner)
+#                            both blank  -> catch-all, every file is copied
+#   split_folders          true  -> <album>/raws/ and <album>/jpgs/
+#                          false -> everything at the album root
+#   output_base_dir        absolute path (no ~); albums are created inside it
+#
+# Camera auto-detection looks for each profile's raw_exts on the card. Put more
+# specific profiles first.
+# ─────────────────────────────────────────────────────────────────────────────
+
+Sony A7 IV|ARW|JPG,JPEG|true|/Users/you/Pictures/Sony A7 IV
+Fujifilm X-T5|RAF|JPG,JPEG|true|/Users/you/Pictures/Fujifilm X-T5
+Film Scans|TIF,TIFF||false|/Users/you/Pictures/Film Scans

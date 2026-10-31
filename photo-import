@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# =============================================================================
+# photo-import — entrypoint script.
+#
+# What this file does, in order:
+#   1. Figures out where it lives on disk (following symlinks) so the
+#      sibling lib/ and ui/ folders can be sourced.
+#   2. Sources every module the app uses.
+#   3. Prints --help text if asked.
+#   4. Routes to either the gum-powered TUI (ui/tui.sh) or the plain
+#      terminal fallback (ui/cli.sh):
+#        • --terminal / --help  -> CLI
+#        • gum not installed    -> CLI (with a warning)
+#        • otherwise            -> TUI
+#
+# Usage:  photo-import [OPTIONS] "Event Name"
+# =============================================================================
+set -euo pipefail
+
+# Resolve symlinks so lib/ paths work regardless of where the command is called from
+_real_dir() {
+  local path="${BASH_SOURCE[0]}"
+  while [[ -L "$path" ]]; do
+    local dir; dir="$(cd -P "$(dirname "$path")" && pwd)"
+    path="$(readlink "$path")"
+    [[ "$path" != /* ]] && path="$dir/$path"
+  done
+  cd -P "$(dirname "$path")" && pwd
+}
+SCRIPT_DIR="$(_real_dir)"
+
+source "$SCRIPT_DIR/lib/config.sh"
+source "$SCRIPT_DIR/lib/sdcard.sh"
+source "$SCRIPT_DIR/lib/importer.sh"
+source "$SCRIPT_DIR/lib/culler.sh"
+source "$SCRIPT_DIR/lib/theme.sh"
+source "$SCRIPT_DIR/lib/dashboard.sh"
+source "$SCRIPT_DIR/lib/dashboard_box.sh"
+source "$SCRIPT_DIR/lib/dashboard_ui.sh"
+
+show_help() {
+  cat << 'EOF'
+photo-import — Import SD card photos into your organized library
+
+USAGE
+  photo-import [OPTIONS] ["Album description"]
+  photo-import              (prompts interactively)
+
+  Albums are named "YYYY-MM-DD Description". The date comes from the DCIM
+  folder(s) you pick (Sony date folders); you supply the description.
+
+OPTIONS
+  -n, --dry-run             Preview without copying or deleting
+  -a, --all                 Import from ALL DCIM subfolders
+  -f, --folder NAME         Import from a specific DCIM subfolder by name
+  -v, --volume PATH         Use this SD card / folder instead of auto-detecting
+  --cull-jpgs               Remove JPGs with no matching RAW (post-Lightroom cull)
+  --terminal                Use the plain terminal UI instead of the gum TUI
+  -h, --help                Show this help
+
+CONFIG OPTIONS
+  --config-update           Edit, delete, or add camera profiles
+  --config-reset            Back up the config (timestamped .bak) and rebuild it
+  --config-dry-run          Simulate the first-run setup; nothing is written
+  --config-update-dry-run   Simulate --config-update; nothing is written
+
+  --dry-run can be chained with a config command to simulate it:
+    --dry-run --config-update   same as  --config-update-dry-run
+    --dry-run --config-reset    simulates a reset (no backup, no wipe, no write)
+
+EXAMPLES
+  photo-import                                    # fully interactive
+  photo-import "Cougar Crest Trail"               # -> 2026-09-05 Cougar Crest Trail
+  photo-import --folder 10260801 "Cougar Crest"   # one specific DCIM folder
+  photo-import --all "Denver - Week 1"            # everything on the card
+  photo-import --dry-run                          # see the plan, copy nothing
+  photo-import --cull-jpgs                        # jump straight to cull mode
+
+CONFIG FILE
+  ~/.config/photo-import/cameras.conf
+EOF
+}
+
+# Route to TUI or CLI based on --terminal flag / gum availability
+if [[ " $* " == *" --terminal "* ]] || [[ " $* " == *" -h "* ]] || [[ " $* " == *" --help "* ]]; then
+  source "$SCRIPT_DIR/ui/cli.sh"
+  run_cli "$@"
+elif ! command -v gum &>/dev/null; then
+  echo "gum not found — install with: brew install gum" >&2
+  echo "Falling back to terminal mode." >&2
+  source "$SCRIPT_DIR/ui/cli.sh"
+  run_cli "$@"
+else
+  source "$SCRIPT_DIR/ui/tui.sh"
+  run_tui "$@"
+fi

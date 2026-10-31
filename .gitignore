@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Built launcher bundle (rebuilt by install-launcher.sh; lives in /Applications
+# by default, but ignore it if someone installs it into the repo directory)
+*.app/
+
+# Personal config — the real one lives in ~/.config/photo-import/, but guard
+# against someone copying it into the repo by accident (it holds local paths).
+cameras.conf
+cameras.conf.*.bak
+
+# Editor / scratch files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Local Claude Code state
+.claude/
